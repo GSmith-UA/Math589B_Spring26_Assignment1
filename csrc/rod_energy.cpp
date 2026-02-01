@@ -123,12 +123,14 @@ void rod_energy_grad(
     //
     // IMPORTANT: include dependence of (u*, v*) on endpoints in gradient.
 
-    for (int i = 0; i < N; ++i) 
+    for(int i=0;i<N;i++)
     {
-        for (int j = i+2; j < N; ++j) 
+        for(int j=i+2;j<N;j++)
         {
+            // Skip if segments share any point
+            if (j <= i+1 || (i==0 && j==N-1)) continue;
 
-            if (j == i+1 || j == i-1 || (i==0 && j==N-1) || (i==N-1 && j==0)) continue;
+
 
 
             auto optimal = computeClosest(i,j);
