@@ -4,6 +4,9 @@
 #include <array>
 #include <numeric>
 #include <limits>
+#include <cassert>
+#include <iostream>
+#include <limits>
 
 extern "C" {
 
