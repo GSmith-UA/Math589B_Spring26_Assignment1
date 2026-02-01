@@ -222,9 +222,9 @@ void rod_energy_grad(
                 double forceMag = 24 * eps * invd * (2*s6*s6 - s6);
 
 
-                double fx = forceMag * tempx * invd;
-                double fy = forceMag * tempy * invd;
-                double fz = forceMag * tempz * invd;
+                double fx = forceMag * tempx;
+                double fy = forceMag * tempy;
+                double fz = forceMag * tempz;
 
 
                 addg(i,   0,  (1-u)*fx);
