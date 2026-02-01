@@ -42,99 +42,32 @@ void rod_energy_grad(
     };
 
     auto computeClosest = [&](int i, int j) -> std::array<double,2> {
-        std::array<double,2> solution{0.0, 0.0};
+        std::array<double,3> p = {get(i,0), get(i,1), get(i,2)};
+        std::array<double,3> q = {get(j,0), get(j,1), get(j,2)};
+        std::array<double,3> d1 = {get(i+1,0)-get(i,0), get(i+1,1)-get(i,1), get(i+1,2)-get(i,2)};
+        std::array<double,3> d2 = {get(j+1,0)-get(j,0), get(j+1,1)-get(j,1), get(j+1,2)-get(j,2)};
 
-        std::array<double,3> r = {get(i,0) - get(j,0), get(i,1) - get(j,1), get(i,2) - get(j,2)};
-        std::array<double,3> d_i = {get(i+1,0) - get(i,0), get(i+1,1) - get(i,1), get(i+1,2) - get(i,2)};
-        std::array<double,3> d_j =  {get(j+1,0) - get(j,0), get(j+1,1) - get(j,1), get(j+1,2) - get(j,2)};
+        double a = std::inner_product(d1.begin(),d1.end(),d1.begin(),0.0);
+        double b = std::inner_product(d1.begin(),d1.end(),d2.begin(),0.0);
+        double c = std::inner_product(d2.begin(),d2.end(),d2.begin(),0.0);
+        std::array<double,3> r;
+        for(int k=0;k<3;k++) r[k] = p[k]-q[k];
+        double d = std::inner_product(d1.begin(),d1.end(),r.begin(),0.0);
+        double e = std::inner_product(d2.begin(),d2.end(),r.begin(),0.0);
 
-        // Coefficients for optimization
-        double a = std::inner_product(d_i.begin(),d_i.end(),d_i.begin(),0.0);
-        double b = std::inner_product(d_i.begin(),d_i.end(),d_j.begin(),0.0);
-        double c = std::inner_product(d_j.begin(),d_j.end(),d_j.begin(),0.0);
-        
-        double d = 2*(std::inner_product(r.begin(),r.end(),d_i.begin(),0.0));
-        double e = -2*(std::inner_product(r.begin(),r.end(),d_j.begin(),0.0));
-
-
-        // Now we optimize using written HW algorithm
-        // Compute the interior solution
         double det = a*c - b*b;
-        double u_star, v_star;
-
-        if (det > 1e-12) {  // non-parallel, numerically safe
-            double r_di = std::inner_product(r.begin(), r.end(), d_i.begin(), 0.0);
-            double r_dj = std::inner_product(r.begin(), r.end(), d_j.begin(), 0.0);
-
-            u_star = ( b*r_dj - c*r_di ) / det;
-            v_star = ( a*r_dj - b*r_di ) / det;
-
-            if (u_star >= 0.0 && u_star <= 1.0 &&
-                v_star >= 0.0 && v_star <= 1.0)
-            {
-                solution[0] = u_star;
-                solution[1] = v_star;
-                return solution;
-            }
+        double u,v;
+        if(det > 1e-12) {
+            u = (b*e - c*d)/det;
+            v = (a*e - b*d)/det;
+        } else {
+            u = 0; v = 0; // parallel, fallback
         }
-
-        // Helper
-        auto eval = [&](double u, double v) {
-        double val = 0.0;
-        for (int k = 0; k < 3; ++k) {
-            double diff = r[k] + u*d_i[k] - v*d_j[k];
-            val += diff * diff;
-        }
-        return val;
-        };
-
-        std::array<std::pair<double,double>,8> candidates;
-        int count = 0;
-
-        // Edge 1
-        if (c > 1e-12) {
-            double v0 = std::clamp(-e / (2*c), 0.0, 1.0);
-            candidates[count++] = {0.0, v0};
-        }
-
-        // Edge 2
-        if (c > 1e-12) {
-            double v1 = std::clamp((2*b - e) / (2*c), 0.0, 1.0);
-            candidates[count++] = {1.0, v1};
-        }
-
-        // Edge 3
-        if (a > 1e-12) {
-            double u0 = std::clamp(-d / (2*a), 0.0, 1.0);
-            candidates[count++] = {u0, 0.0};
-        }   
-
-        // Edge 4
-        if (a > 1e-12) {
-            double u1 = std::clamp((2*b - d) / (2*a), 0.0, 1.0);
-            candidates[count++] = {u1, 1.0};
-        }
-
-        // Corners
-        candidates[count++] = {0.0,0.0};
-        candidates[count++] = {0.0,1.0};
-        candidates[count++] = {1.0,0.0};
-        candidates[count++] = {1.0,1.0};
-
-
-        // Find the solution
-        double bestVal = std::numeric_limits<double>::infinity();
-
-        for (auto& uv : candidates) {
-            double val = eval(uv.first, uv.second);
-            if (val < bestVal) {
-                bestVal = val;
-                solution[0] = uv.first;
-                solution[1] = uv.second;
-            }
-        }
-        return solution;
+        u = std::clamp(u,0.0,1.0);
+        v = std::clamp(v,0.0,1.0);
+        return {u,v};
     };
+
 
     // ---- Bending: kb * ||x_{i+1} - 2 x_i + x_{i-1}||^2
     for (int i = 0; i < N; ++i) {
