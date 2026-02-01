@@ -128,7 +128,8 @@ void rod_energy_grad(
         for (int j = i+2; j < N; ++j) 
         {
 
-            if ((i == 0 && j == N-1)) continue; // periodic neighbor
+            if (j == i+1 || j == i-1 || (i==0 && j==N-1) || (i==N-1 && j==0)) continue;
+
 
             auto optimal = computeClosest(i,j);
             double u = optimal[0];
