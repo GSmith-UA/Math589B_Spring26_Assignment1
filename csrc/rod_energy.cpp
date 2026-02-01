@@ -155,6 +155,7 @@ void rod_energy_grad(
                 double s6 = s2 * s2 * s2;
 
                 E += 4 * eps * (s6*s6 - s6) + eps;
+                assert(std::isfinite(E) && "WCA energy blew up!");
                 double forceMag = 24 * eps * invd * (2*s6*s6 - s6);
 
 
