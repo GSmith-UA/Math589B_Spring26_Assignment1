@@ -78,7 +78,7 @@ void rod_energy_grad(
         double rz = get(a,2) - get(b,2);
     
         double dist = std::sqrt(rx*rx + ry*ry + rz*rz);
-        dist = std::max(dist, 1e-12);
+        dist = std::max(dist, 1e-6);
     
         const double cutoff = std::pow(2.0, 1.0/6.0) * sigma;
         if (dist >= cutoff) return;
@@ -124,7 +124,7 @@ void rod_energy_grad(
         double rz = get(p,2) - cz;
 
         double dist = std::sqrt(rx*rx + ry*ry + rz*rz);
-        dist = std::max(dist, 1e-12);
+        dist = std::max(dist, 1e-6);
 
         const double cutoff = std::pow(2.0, 1.0/6.0) * sigma;
         if (dist >= cutoff) return;
