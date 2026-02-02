@@ -60,7 +60,7 @@ void rod_energy_grad(
 
         double det = a*c - b*b;
         double u,v;
-        if(det > 1e-12) {
+        if(det > 1e-6) {
             u = (b*e - c*d)/det;
             v = (a*e - b*d)/det;
         } else {
