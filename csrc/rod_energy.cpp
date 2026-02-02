@@ -261,7 +261,7 @@ void rod_energy_grad(
                 tempz = (get(i,2) + u*(get(i+1,2) - get(i,2))) - (get(j,2) + v*(get(j+1,2) - get(j,2)));
 
                 dist = std::sqrt((tempx)*(tempx) + (tempy)*(tempy) + (tempz)*(tempz));
-                dist = std::max(dist, 1e-12);
+                dist = std::max(dist, 1e-9);
                 const double cutoff = std::pow(2.0, 1.0/6.0) * sigma;
                 if (dist < cutoff)
                 {
