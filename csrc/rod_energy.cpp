@@ -128,13 +128,14 @@ void rod_energy_grad(
 
     for(int i=0;i<N;i++)
     {
-        for(int j=i+2;j<N;j++)
+        for(int j=i+1;j<N;j++)
         {
-            // Skip if segments share any point
-            if (j <= i+1 || (i==0 && j==N-1)) continue;
-
-
-
+            int i0 = i;
+            int i1 = idx(i+1);
+            int j0 = j;
+            int j1 = idx(j+1);
+            if( i0 == j0 || i0 == j1 || i1 == j0 || i1 == j1 )
+                continue; // skip adjacent segments
 
             auto optimal = computeClosest(i,j);
             double u = optimal[0];
@@ -144,9 +145,9 @@ void rod_energy_grad(
             double tempy = 0.0;
             double tempz = 0.0;
 
-            tempx = (get(i,0) + optimal[0]*(get(i+1,0) - get(i,0))) - (get(j,0) + optimal[1]*(get(j+1,0) - get(j,0)));
-            tempy = (get(i,1) + optimal[0]*(get(i+1,1) - get(i,1))) - (get(j,1) + optimal[1]*(get(j+1,1) - get(j,1))); 
-            tempz = (get(i,2) + optimal[0]*(get(i+1,2) - get(i,2))) - (get(j,2) + optimal[1]*(get(j+1,2) - get(j,2)));
+            tempx = (get(i,0) + u*(get(i+1,0) - get(i,0))) - (get(j,0) + v*(get(j+1,0) - get(j,0)));
+            tempy = (get(i,1) + u*(get(i+1,1) - get(i,1))) - (get(j,1) + v*(get(j+1,1) - get(j,1))); 
+            tempz = (get(i,2) + u*(get(i+1,2) - get(i,2))) - (get(j,2) + v*(get(j+1,2) - get(j,2)));
 
             dist = std::sqrt((tempx)*(tempx) + (tempy)*(tempy) + (tempz)*(tempz));
             dist = std::max(dist, 1e-12);
@@ -156,32 +157,37 @@ void rod_energy_grad(
                 double invd = 1.0 / dist;
                 double s2 = (sigma * invd) * (sigma * invd);
                 double s6 = s2 * s2 * s2;
-
                 E += 4 * eps * (s6*s6 - s6) + eps;
-                assert(std::isfinite(E) && "WCA energy blew up!");
+                
+                if (4 * eps * (s6*s6 - s6) + eps > 1e5)
+                {
+                    std::cout<<"Large WCA energy detected!" << std::endl;
+                    std::cout<< "E WCA contribution: " << 4 * eps * (s6*s6 - s6) + eps << " at dist " << dist << std::endl;
+                    std::cout<< "  between segments (" << i << "," << i+1 << ") and (" << j << "," << j+1 << ")" << std::endl;
+                    std::cout<< "  with parameters u=" << u << ", v=" << v << std::endl;
+                    std::cout<< "-------------------------------------------" << std::endl;
+                }
                 double forceMag = 24 * eps * invd * (2*s6*s6 - s6);
+                double fx = forceMag * (tempx * invd);
+                double fy = forceMag * (tempy * invd);
+                double fz = forceMag * (tempz * invd);
 
+                addg(i,   0,  -fx * (1-u));
+                addg(i,   1,  -fy * (1-u));
+                addg(i,   2,  -fz * (1-u));
 
-                double fx = forceMag * tempx;
-                double fy = forceMag * tempy;
-                double fz = forceMag * tempz;
+                addg(i+1, 0,  -fx * u);
+                addg(i+1, 1,  -fy * u);
+                addg(i+1, 2,  -fz * u);
 
+                addg(j,   0, fx * (1-v));
+                addg(j,   1, fy * (1-v));
+                addg(j,   2, fz * (1-v));
 
-                addg(i,   0,  (1-u)*fx);
-                addg(i,   1,  (1-u)*fy);
-                addg(i,   2,  (1-u)*fz);
+                addg(j+1, 0, fx * v);
+                addg(j+1, 1, fy * v);
+                addg(j+1, 2, fz * v);
 
-                addg(i+1, 0,  u*fx);
-                addg(i+1, 1,  u*fy);
-                addg(i+1, 2,  u*fz);
-
-                addg(j,   0, -(1-v)*fx);
-                addg(j,   1, -(1-v)*fy);
-                addg(j,   2, -(1-v)*fz);
-
-                addg(j+1, 0, -v*fx);
-                addg(j+1, 1, -v*fy);
-                addg(j+1, 2, -v*fz);
 
 
             }
