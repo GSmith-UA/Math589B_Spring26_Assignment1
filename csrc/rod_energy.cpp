@@ -213,7 +213,7 @@ void rod_energy_grad(
 
     for(int i=0;i<N;i++)
     {
-        for(int j=i+1;j<N;j++)
+        for(int j=i+3;j<N;j++)
         {
             int i0 = i;
             int i1 = idx(i+1);
