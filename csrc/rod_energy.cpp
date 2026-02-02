@@ -66,8 +66,8 @@ void rod_energy_grad(
         } else {
             u = 0; v = 0; // parallel, fallback
         }
-        u = std::clamp(u,0.0,1.0);
-        v = std::clamp(v,0.0,1.0);
+        // u = std::clamp(u,0.0,1.0);
+        // v = std::clamp(v,0.0,1.0);
         return {u,v};
     };
 
@@ -223,30 +223,44 @@ void rod_energy_grad(
                 continue; // skip adjacent segments
 
             auto optimal = computeClosest(i,j);
-            double u = optimal[0];
-            double v = optimal[1];
-            bool u_clamped = (u == 0.0 || u == 1.0);
-            bool v_clamped = (v == 0.0 || v == 1.0);
+            // double u = optimal[0];
+            // double v = optimal[1];
+            // bool u_clamped = (u == 0.0 || u == 1.0);
+            // bool v_clamped = (v == 0.0 || v == 1.0);
 
-            // u_clamped = false;
-            // v_clamped = false;
+            double u_raw = optimal[0];
+            double v_raw = optimal[1];
+
+            bool u_low  = (u_raw <= 0.0);
+            bool u_high = (u_raw >= 1.0);
+            bool v_low  = (v_raw <= 0.0);
+            bool v_high = (v_raw >= 1.0);
+
+            bool u_clamped = u_low || u_high;
+            bool v_clamped = v_low || v_high;
+
+            double u = std::clamp(u_raw, 0.0, 1.0);
+            double v = std::clamp(v_raw, 0.0, 1.0);
+
 
 
 
             if (u_clamped && v_clamped)
             {
-                int pi = (u == 0.0) ? i : i+1;
-                int pj = (v == 0.0) ? j : j+1;
+                int pi = u_low ? i : i+1;
+                int pj = v_low ? j : j+1;
                 pointPointWCA(pi, pj);
+
             }
             else if (u_clamped)
             {
-                int pi = (u == 0.0) ? i : i+1;
+                int pi = u_low ? i : i+1;
                 pointSegmentWCA(pi, j, j+1);
+
             }
             else if (v_clamped)
             {
-                int pj = (v == 0.0) ? j : j+1;
+                int pj = v_low ? j : j+1;
                 pointSegmentWCA(pj, i, i+1);
             }
             else
