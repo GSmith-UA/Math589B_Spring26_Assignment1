@@ -215,12 +215,12 @@ void rod_energy_grad(
     {
         for(int j=i+3;j<N;j++)
         {
-            int i0 = i;
-            int i1 = idx(i+1);
-            int j0 = j;
-            int j1 = idx(j+1);
-            if( i0 == j0 || i0 == j1 || i1 == j0 || i1 == j1 )
-                continue; // skip adjacent segments
+            // int i0 = i;
+            // int i1 = idx(i+1);
+            // int j0 = j;
+            // int j1 = idx(j+1);
+            // if( i0 == j0 || i0 == j1 || i1 == j0 || i1 == j1 )
+            //     continue; // skip adjacent segments
 
             auto optimal = computeClosest(i,j);
             double u = optimal[0];
