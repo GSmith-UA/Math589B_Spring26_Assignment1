@@ -139,7 +139,7 @@ void rod_energy_grad(
 
     for(int i=0;i<N;i++)
     {
-        for(int j=i+4;j<N;j++)
+        for(int j=i+3;j<N;j++)
         {
             int i0 = i;
             int i1 = idx(i+1);
@@ -149,24 +149,13 @@ void rod_energy_grad(
                 continue; // skip adjacent segments
 
             auto optimal = computeClosest(i,j);
-            // double u = optimal[0];
-            // double v = optimal[1];
-            // bool u_clamped = (u == 0.0 || u == 1.0);
-            // bool v_clamped = (v == 0.0 || v == 1.0);
 
             double u = optimal[0];
             double v = optimal[1];
 
-            bool u_clamped (u == 0.0 || u == 1.0);
-            bool v_clamped (v == 0.0 || v == 1.0);
-
-
-            // For debugging... 
-            // u_clamped = false;
-            // v_clamped = false;
             if (false)
             {
-                
+
             }
             else
             {
@@ -189,17 +178,8 @@ void rod_energy_grad(
                     double s6 = s2 * s2 * s2;
                     E += 4 * eps * (s6*s6 - s6) + eps;
 
-                    // if (4 * eps * (s6*s6 - s6) + eps > 1e5)
-                    // {
-                    //     std::cout<<"Large WCA energy detected!" << std::endl;
-                    //     std::cout<< "E WCA contribution: " << 4 * eps * (s6*s6 - s6) + eps << " at dist " << dist << std::endl;
-                    //     std::cout<< "  between segments (" << i << "," << i+1 << ") and (" << j << "," << j+1 << ")" << std::endl;
-                    //     std::cout<< "  with parameters u=" << u << ", v=" << v << std::endl;
-                    //     std::cout<< "-------------------------------------------" << std::endl;
-                    // }
                     double forceMag = 24 * eps * invd * (2*s6*s6 - s6);
-                    if (forceMag > 1e12)
-                    { continue; }
+
                     double fx = forceMag * (tempx * invd);
                     double fy = forceMag * (tempy * invd);
                     double fz = forceMag * (tempz * invd);
