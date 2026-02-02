@@ -91,6 +91,8 @@ void rod_energy_grad(
         E += Uwca;
     
         double forceMag = 24 * eps * invd * (2*s6*s6 - s6);
+        if (forceMag > 1e12)
+            { forceMag = 0.0; }
         double fx = forceMag * rx * invd;
         double fy = forceMag * ry * invd;
         double fz = forceMag * rz * invd;
@@ -104,51 +106,53 @@ void rod_energy_grad(
         double sx = get(s1,0) - get(s0,0);
         double sy = get(s1,1) - get(s0,1);
         double sz = get(s1,2) - get(s0,2);
-    
+
         double px = get(p,0) - get(s0,0);
         double py = get(p,1) - get(s0,1);
         double pz = get(p,2) - get(s0,2);
-    
+
         double seg2 = sx*sx + sy*sy + sz*sz;
         if (seg2 < 1e-14) return;
-    
+
         double t_raw = (px*sx + py*sy + pz*sz) / seg2;
         double t = std::clamp(t_raw, 0.0, 1.0);
-    
+
         double cx = get(s0,0) + t*sx;
         double cy = get(s0,1) + t*sy;
         double cz = get(s0,2) + t*sz;
-    
+
         double rx = get(p,0) - cx;
         double ry = get(p,1) - cy;
         double rz = get(p,2) - cz;
-    
+
         double dist = std::sqrt(rx*rx + ry*ry + rz*rz);
         dist = std::max(dist, 1e-12);
-    
+
         const double cutoff = std::pow(2.0, 1.0/6.0) * sigma;
         if (dist >= cutoff) return;
-    
+
         double invd = 1.0 / dist;
         double s2 = (sigma * invd) * (sigma * invd);
         double s6 = s2 * s2 * s2;
-    
+
         double Uwca = 4 * eps * (s6*s6 - s6) + eps;
         E += Uwca;
-    
+
         double forceMag = 24 * eps * invd * (2*s6*s6 - s6);
+        if (forceMag > 1e12)
+            { forceMag = 0.0; }
         double fx = forceMag * rx * invd;
         double fy = forceMag * ry * invd;
         double fz = forceMag * rz * invd;
-    
+
         // --- CORRECT GRADIENT TERMS ---
-    
+
         // base forces
         addg(p,0,  fx); addg(p,1,  fy); addg(p,2,  fz);
-    
+
         // d t / d s0 and d t / d s1
         double invSeg2 = 1.0 / seg2;
-    
+
         // gradient of t_raw wrt s0, s1
         // dt/ds0 = ( -s * seg2 - (p-s0)·s * (-2s) ) / seg2^2
         // simplified into vector form:
@@ -156,11 +160,11 @@ void rod_energy_grad(
         double dt0x = (-sx*seg2 + 2*dot_ps*sx) * (invSeg2*invSeg2);
         double dt0y = (-sy*seg2 + 2*dot_ps*sy) * (invSeg2*invSeg2);
         double dt0z = (-sz*seg2 + 2*dot_ps*sz) * (invSeg2*invSeg2);
-    
+
         double dt1x = ( sx*seg2 - 2*dot_ps*sx) * (invSeg2*invSeg2);
         double dt1y = ( sy*seg2 - 2*dot_ps*sy) * (invSeg2*invSeg2);
         double dt1z = ( sz*seg2 - 2*dot_ps*sz) * (invSeg2*invSeg2);
-    
+
         // only active when t is interior
         if (t_raw > 0.0 && t_raw < 1.0)
         {
@@ -168,7 +172,7 @@ void rod_energy_grad(
             addg(s0,0, -fx * (1 - t) + (-fx * t)*dt0x );
             addg(s0,1, -fy * (1 - t) + (-fy * t)*dt0y );
             addg(s0,2, -fz * (1 - t) + (-fz * t)*dt0z );
-        
+
             addg(s1,0, -fx * t + (-fx * (1 - t))*dt1x );
             addg(s1,1, -fy * t + (-fy * (1 - t))*dt1y );
             addg(s1,2, -fz * t + (-fz * (1 - t))*dt1z );
@@ -179,7 +183,7 @@ void rod_energy_grad(
             addg(s0,0, -fx*(1-t));
             addg(s0,1, -fy*(1-t));
             addg(s0,2, -fz*(1-t));
-        
+
             addg(s1,0, -fx*t);
             addg(s1,1, -fy*t);
             addg(s1,2, -fz*t);
@@ -326,6 +330,8 @@ void rod_energy_grad(
                     //     std::cout<< "-------------------------------------------" << std::endl;
                     // }
                     double forceMag = 24 * eps * invd * (2*s6*s6 - s6);
+                    if (forceMag > 1e12)
+                    { continue; }
                     double fx = forceMag * (tempx * invd);
                     double fy = forceMag * (tempy * invd);
                     double fz = forceMag * (tempz * invd);
