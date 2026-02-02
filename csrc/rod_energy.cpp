@@ -140,6 +140,9 @@ void rod_energy_grad(
             auto optimal = computeClosest(i,j);
             double u = optimal[0];
             double v = optimal[1];
+            if (u == 0.0 || u == 1.0 || v == 0.0 || v == 1.0)
+                continue;
+
             double dist;
             double tempx = 0.0;
             double tempy = 0.0;
