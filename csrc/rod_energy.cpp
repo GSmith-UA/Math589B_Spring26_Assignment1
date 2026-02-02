@@ -159,14 +159,14 @@ void rod_energy_grad(
                 double s6 = s2 * s2 * s2;
                 E += 4 * eps * (s6*s6 - s6) + eps;
                 
-                if (4 * eps * (s6*s6 - s6) + eps > 1e5)
-                {
-                    std::cout<<"Large WCA energy detected!" << std::endl;
-                    std::cout<< "E WCA contribution: " << 4 * eps * (s6*s6 - s6) + eps << " at dist " << dist << std::endl;
-                    std::cout<< "  between segments (" << i << "," << i+1 << ") and (" << j << "," << j+1 << ")" << std::endl;
-                    std::cout<< "  with parameters u=" << u << ", v=" << v << std::endl;
-                    std::cout<< "-------------------------------------------" << std::endl;
-                }
+                // if (4 * eps * (s6*s6 - s6) + eps > 1e5)
+                // {
+                //     std::cout<<"Large WCA energy detected!" << std::endl;
+                //     std::cout<< "E WCA contribution: " << 4 * eps * (s6*s6 - s6) + eps << " at dist " << dist << std::endl;
+                //     std::cout<< "  between segments (" << i << "," << i+1 << ") and (" << j << "," << j+1 << ")" << std::endl;
+                //     std::cout<< "  with parameters u=" << u << ", v=" << v << std::endl;
+                //     std::cout<< "-------------------------------------------" << std::endl;
+                // }
                 double forceMag = 24 * eps * invd * (2*s6*s6 - s6);
                 double fx = forceMag * (tempx * invd);
                 double fy = forceMag * (tempy * invd);
