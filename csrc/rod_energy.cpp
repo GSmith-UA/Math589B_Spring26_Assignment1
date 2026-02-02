@@ -83,139 +83,6 @@ void rod_energy_grad(
         return {u,v};
     };
 
-    auto pointPointWCA = [&](int a, int b)
-    {
-        double rx = get(a,0) - get(b,0);
-        double ry = get(a,1) - get(b,1);
-        double rz = get(a,2) - get(b,2);
-    
-        double dist = std::sqrt(rx*rx + ry*ry + rz*rz);
-        dist = std::max(dist, 1e-6);
-    
-        const double cutoff = std::pow(2.0, 1.0/6.0) * sigma;
-        if (dist >= cutoff) return;
-    
-        double invd = 1.0 / dist;
-        double s2 = (sigma * invd) * (sigma * invd);
-        double s6 = s2 * s2 * s2;
-    
-        double Uwca = 4 * eps * (s6*s6 - s6) + eps;
-        E += Uwca;
-    
-        double forceMag = 24 * eps * invd * (2*s6*s6 - s6);
-        if (forceMag > 1e12)
-            { forceMag = 0.0; }
-        double fx = forceMag * rx * invd;
-        double fy = forceMag * ry * invd;
-        double fz = forceMag * rz * invd;
-    
-        addg(a,0,  fx); addg(a,1,  fy); addg(a,2,  fz);
-        addg(b,0, -fx); addg(b,1, -fy); addg(b,2, -fz);
-    };
-
-    auto pointSegmentWCA = [&](int p, int s0, int s1)
-    {
-        double sx = get(s1,0) - get(s0,0);
-        double sy = get(s1,1) - get(s0,1);
-        double sz = get(s1,2) - get(s0,2);
-
-        double px = get(p,0) - get(s0,0);
-        double py = get(p,1) - get(s0,1);
-        double pz = get(p,2) - get(s0,2);
-
-        double seg2 = sx*sx + sy*sy + sz*sz;
-        if (seg2 < 1e-14) return;
-
-        double t_raw = (px*sx + py*sy + pz*sz) / seg2;
-        double t = std::clamp(t_raw, 0.0, 1.0);
-
-        double cx = get(s0,0) + t*sx;
-        double cy = get(s0,1) + t*sy;
-        double cz = get(s0,2) + t*sz;
-
-        double rx = get(p,0) - cx;
-        double ry = get(p,1) - cy;
-        double rz = get(p,2) - cz;
-
-        double dist = std::sqrt(rx*rx + ry*ry + rz*rz);
-        dist = std::max(dist, 1e-12);
-
-        const double cutoff = std::pow(2.0, 1.0/6.0) * sigma;
-        if (dist >= cutoff) return;
-
-        double invd = 1.0 / dist;
-        double s2 = (sigma * invd) * (sigma * invd);
-        double s6 = s2 * s2 * s2;
-
-        double Uwca = 4 * eps * (s6*s6 - s6) + eps;
-        E += Uwca;
-
-        double forceMag = 24 * eps * invd * (2*s6*s6 - s6);
-        double fx = forceMag * rx * invd;
-        double fy = forceMag * ry * invd;
-        double fz = forceMag * rz * invd;
-
-        // --- CORRECT GRADIENT TERMS ---
-
-        // force on point
-        addg(p,0,  fx); addg(p,1,  fy); addg(p,2,  fz);
-
-        // only if projection is interior do we need dt/dx
-        // only if projection is interior do we need dt/dx
-        constexpr double EPS_T = 1e-9;
-        bool interior = (t_raw > EPS_T && t_raw < 1.0 - EPS_T);
-
-        if (interior)
-        {
-            double invSeg2 = 1.0 / seg2;
-            double dot_ps = px*sx + py*sy + pz*sz;
-
-            // dt/dp = s / seg2
-            double dt_dp_x = sx * invSeg2;
-            double dt_dp_y = sy * invSeg2;
-            double dt_dp_z = sz * invSeg2;
-
-            // dt/ds0
-            double dt_ds0_x = (-sx - px) * invSeg2 + 2.0 * dot_ps * sx * invSeg2 * invSeg2;
-            double dt_ds0_y = (-sy - py) * invSeg2 + 2.0 * dot_ps * sy * invSeg2 * invSeg2;
-            double dt_ds0_z = (-sz - pz) * invSeg2 + 2.0 * dot_ps * sz * invSeg2 * invSeg2;
-
-            // dt/ds1
-            double dt_ds1_x = ( px) * invSeg2 - 2.0 * dot_ps * sx * invSeg2 * invSeg2;
-            double dt_ds1_y = ( py) * invSeg2 - 2.0 * dot_ps * sy * invSeg2 * invSeg2;
-            double dt_ds1_z = ( pz) * invSeg2 - 2.0 * dot_ps * sz * invSeg2 * invSeg2;
-
-            // dot(f, s)
-            double f_dot_s = fx*sx + fy*sy + fz*sz;
-
-            // gradient on s0
-            addg(s0,0, -fx*(1.0 - t) - f_dot_s * dt_ds0_x);
-            addg(s0,1, -fy*(1.0 - t) - f_dot_s * dt_ds0_y);
-            addg(s0,2, -fz*(1.0 - t) - f_dot_s * dt_ds0_z);
-
-            // gradient on s1
-            addg(s1,0, -fx*t - f_dot_s * dt_ds1_x);
-            addg(s1,1, -fy*t - f_dot_s * dt_ds1_y);
-            addg(s1,2, -fz*t - f_dot_s * dt_ds1_z);
-        }
-        else
-        {
-            // endpoint cases (clamped)
-            addg(s0,0, -fx*(1-t));
-            addg(s0,1, -fy*(1-t));
-            addg(s0,2, -fz*(1-t));
-
-            addg(s1,0, -fx*t);
-            addg(s1,1, -fy*t);
-            addg(s1,2, -fz*t);
-        }
-    };
-
-
-
-
-
-
     // ---- Bending: kb * ||x_{i+1} - 2 x_i + x_{i-1}||^2
     for (int i = 0; i < N; ++i) {
         for (int d = 0; d < 3; ++d) {
@@ -297,23 +164,9 @@ void rod_energy_grad(
             // For debugging... 
             // u_clamped = false;
             // v_clamped = false;
-            if (u_clamped && v_clamped)
+            if (false)
             {
-                int pi = u_low ? i : i+1;
-                int pj = v_low ? j : j+1;
-                pointPointWCA(pi, pj);
-
-            }
-            else if (u_clamped)
-            {
-                int pi = u_low ? i : i+1;
-                pointSegmentWCA(pi, j, j+1);
-
-            }
-            else if (v_clamped)
-            {
-                int pj = v_low ? j : j+1;
-                pointSegmentWCA(pj, i, i+1);
+                
             }
             else
             {
