@@ -281,21 +281,21 @@ void rod_energy_grad(
                     double fy = forceMag * (tempy * invd);
                     double fz = forceMag * (tempz * invd);
 
-                    addg(i,   0,  -fx * (1-u));
-                    addg(i,   1,  -fy * (1-u));
-                    addg(i,   2,  -fz * (1-u));
+                    addg(i,   0,  fx * (1-u));
+                    addg(i,   1,  fy * (1-u));
+                    addg(i,   2,  fz * (1-u));
 
-                    addg(i+1, 0,  -fx * u);
-                    addg(i+1, 1,  -fy * u);
-                    addg(i+1, 2,  -fz * u);
+                    addg(i+1, 0,  fx * u);
+                    addg(i+1, 1,  fy * u);
+                    addg(i+1, 2,  fz * u);
 
-                    addg(j,   0, fx * (1-v));
-                    addg(j,   1, fy * (1-v));
-                    addg(j,   2, fz * (1-v));
+                    addg(j,   0, -fx * (1-v));
+                    addg(j,   1, -fy * (1-v));
+                    addg(j,   2, -fz * (1-v));
 
-                    addg(j+1, 0, fx * v);
-                    addg(j+1, 1, fy * v);
-                    addg(j+1, 2, fz * v);
+                    addg(j+1, 0, -fx * v);
+                    addg(j+1, 1, -fy * v);
+                    addg(j+1, 2, -fz * v);
 
 
 
