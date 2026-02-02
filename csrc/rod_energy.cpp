@@ -222,14 +222,25 @@ void rod_energy_grad(
             if( i0 == j0 || i0 == j1 || i1 == j0 || i1 == j1 )
                 continue; // skip adjacent segments
 
+            auto smoothClamp = [&](double x, double eps = 1e-6)
+            {
+                if (x < eps)
+                    return eps * std::log1p(std::exp(x / eps));
+                if (x > 1.0 - eps)
+                    return 1.0 - eps * std::log1p(std::exp((1.0 - x) / eps));
+                return x;
+            };
+
             auto optimal = computeClosest(i,j);
-            double u = optimal[0];
-            double v = optimal[1];
+            double u = smoothClamp(optimal[0]);
+            double v = smoothClamp(optimal[1]);
             bool u_clamped = (u == 0.0 || u == 1.0);
             bool v_clamped = (v == 0.0 || v == 1.0);
-            
-            u_clamped = true;
-            v_clamped = true;
+
+            u_clamped = false;
+            v_clamped = false;
+
+
 
             if (u_clamped && v_clamped)
             {
