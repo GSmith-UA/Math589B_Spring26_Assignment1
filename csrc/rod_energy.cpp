@@ -227,7 +227,10 @@ void rod_energy_grad(
             double v = optimal[1];
             bool u_clamped = (u == 0.0 || u == 1.0);
             bool v_clamped = (v == 0.0 || v == 1.0);
-
+            
+            u_clamped = false;
+            v_clamped = false;
+            
             if (u_clamped && v_clamped)
             {
                 int pi = (u == 0.0) ? i : i+1;
