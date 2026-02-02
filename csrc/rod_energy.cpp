@@ -63,11 +63,23 @@ void rod_energy_grad(
         if(det > 1e-6) {
             u = (b*e - c*d)/det;
             v = (a*e - b*d)/det;
-        } else {
-            u = 0; v = 0; // parallel, fallback
         }
-        // u = std::clamp(u,0.0,1.0);
-        // v = std::clamp(v,0.0,1.0);
+        else {
+            // Parallel case: find the closest point on segment j to the start of segment i
+            // Since det ~ 0, we can't use the system of equations.
+            // We project vector r (p-q) onto d2 to find the position v.
+            u = 0.0;
+            double d2_mag_sq = c; // c is d2.d2
+            if (d2_mag_sq > 1e-9) {
+                // v = dot(p - q, d2) / dot(d2, d2)
+                // Note: r = p - q, so v = dot(r, d2) / c
+                v = e / c; 
+            } else {
+                v = 0.0; // Segment j is a single point
+            }
+        }
+        u = std::clamp(u,0.0,1.0);
+        v = std::clamp(v,0.0,1.0);
         return {u,v};
     };
 
@@ -275,19 +287,11 @@ void rod_energy_grad(
             // bool u_clamped = (u == 0.0 || u == 1.0);
             // bool v_clamped = (v == 0.0 || v == 1.0);
 
-            double u_raw = optimal[0];
-            double v_raw = optimal[1];
+            double u = optimal[0];
+            double v = optimal[1];
 
-            bool u_low  = (u_raw <= 0.0);
-            bool u_high = (u_raw >= 1.0);
-            bool v_low  = (v_raw <= 0.0);
-            bool v_high = (v_raw >= 1.0);
-
-            bool u_clamped = u_low || u_high;
-            bool v_clamped = v_low || v_high;
-
-            double u = std::clamp(u_raw, 0.0, 1.0);
-            double v = std::clamp(v_raw, 0.0, 1.0);
+            bool u_clamped (u == 0.0 || u == 1.0);
+            bool v_clamped (v == 0.0 || v == 1.0);
 
 
             // For debugging... 
