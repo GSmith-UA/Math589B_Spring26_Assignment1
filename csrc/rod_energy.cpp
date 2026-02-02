@@ -290,8 +290,9 @@ void rod_energy_grad(
             double v = std::clamp(v_raw, 0.0, 1.0);
 
 
-
-
+            // For debuggin... 
+            u_clamped = false;
+            v_clamped = false;
             if (u_clamped && v_clamped)
             {
                 int pi = u_low ? i : i+1;
