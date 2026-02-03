@@ -141,15 +141,19 @@ void rod_energy_grad(
 
     for (int i = 0; i < N; ++i) 
     {
-        // Check segments j that are at least 3 steps ahead of i
-        // We only go up to N/2 to avoid checking (i,j) then (j,i)
-        for (int step = 3; step <= N - 3; ++step) 
+        for (int j = i + 3; j < N; ++j) 
         {
-            int j = (i + step) % N;
+            // Define nodes for segment i: (i, i+1)
+            int i0 = i;
+            int i1 = idx(i + 1);
+            // Define nodes for segment j: (j, j+1)
+            int j0 = j;
+            int j1 = idx(j + 1);
 
-            // To avoid double counting pairs (i,j) and (j,i), 
-            // only process if i < j.
-            if (i >= j) continue;
+            // STRICT EXCLUSION: Skip if segments share ANY node
+            if (i0 == j0 || i0 == j1 || i1 == j0 || i1 == j1) {
+                continue;
+            }
 
             auto optimal = computeClosest(i, j);
             double u = optimal[0];
@@ -178,7 +182,7 @@ void rod_energy_grad(
             double distSq = dx*dx + dy*dy + dz*dz;
 
             if (distSq < cutoffSq) {
-                double dist = std::sqrt(distSq);
+                double dist = std::sqrt(std::max(distSq,1e-4));
                 dist = std::max(dist, 1e-12); 
 
                 double invd = 1.0 / dist;
