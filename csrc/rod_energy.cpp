@@ -136,76 +136,65 @@ void rod_energy_grad(
     // Exclusions: skip adjacent segments (including wrap neighbors).
     //
     // IMPORTANT: include dependence of (u*, v*) on endpoints in gradient.
+    const double cutoff = std::pow(2.0, 1.0/6.0) * sigma;
+    const double cutoffSq = cutoff * cutoff;
 
-    for(int i=0;i<N;i++)
-    {
-        for(int j=i+3;j<N;j++)
-        {
-            int i0 = i;
-            int i1 = idx(i+1);
-            int j0 = j;
-            int j1 = idx(j+1);
-            if( i0 == j0 || i0 == j1 || i1 == j0 || i1 == j1 )
-                continue; // skip adjacent segments
+    for (int i = 0; i < N; ++i) {
+        // j = i + 2 ensures we skip the current segment and the immediate neighbor
+        for (int j = i + 3; j < N; ++j) {
 
-            auto optimal = computeClosest(i,j);
+            // Special case: if i is the first segment and j is the last, 
+            // they share node 0. Skip them.
+            if (i == 0 && j == N - 1) continue;
 
+            auto optimal = computeClosest(i, j);
             double u = optimal[0];
             double v = optimal[1];
 
-            if (false)
-            {
+            // Position on segment i: P = x_i + u*(x_{i+1} - x_i)
+            // Position on segment j: Q = x_j + v*(x_{j+1} - x_j)
+            double dx = (get(i,0) + u*(get(i+1,0) - get(i,0))) - (get(j,0) + v*(get(j+1,0) - get(j,0)));
+            double dy = (get(i,1) + u*(get(i+1,1) - get(i,1))) - (get(j,1) + v*(get(j+1,1) - get(j,1)));
+            double dz = (get(i,2) + u*(get(i+1,2) - get(i,2))) - (get(j,2) + v*(get(j+1,2) - get(j,2)));
 
+            double distSq = dx*dx + dy*dy + dz*dz;
+
+            if (distSq < cutoffSq) {
+                double dist = std::sqrt(distSq);
+                dist = std::max(dist, 1e-8); // Safety floor
+
+                double invd = 1.0 / dist;
+                double s2 = (sigma * invd) * (sigma * invd);
+                double s6 = s2 * s2 * s2;
+
+                // Energy
+                E += 4.0 * eps * (s6 * s6 - s6) + eps;
+
+                // Force Magnitude (Repulsive)
+                double forceMag = 24.0 * eps * invd * (2.0 * s6 * s6 - s6);
+                double fx = forceMag * (dx * invd);
+                double fy = forceMag * (dy * invd);
+                double fz = forceMag * (dz * invd);
+
+                // --- GRadients (Flipped for Repulsion) ---
+                // Segment i is pushed AWAY from segment j (direction +f)
+                addg(i,   0,  fx * (1.0 - u));
+                addg(i,   1,  fy * (1.0 - u));
+                addg(i,   2,  fz * (1.0 - u));
+
+                addg(i+1, 0,  fx * u);
+                addg(i+1, 1,  fy * u);
+                addg(i+1, 2,  fz * u);
+
+                // Segment j is pushed AWAY from segment i (direction -f)
+                addg(j,   0, -fx * (1.0 - v));
+                addg(j,   1, -fy * (1.0 - v));
+                addg(j,   2, -fz * (1.0 - v));
+
+                addg(j+1, 0, -fx * v);
+                addg(j+1, 1, -fy * v);
+                addg(j+1, 2, -fz * v);
             }
-            else
-            {
-                double dist;
-                double tempx = 0.0;
-                double tempy = 0.0;
-                double tempz = 0.0;
-
-                tempx = (get(i,0) + u*(get(i+1,0) - get(i,0))) - (get(j,0) + v*(get(j+1,0) - get(j,0)));
-                tempy = (get(i,1) + u*(get(i+1,1) - get(i,1))) - (get(j,1) + v*(get(j+1,1) - get(j,1))); 
-                tempz = (get(i,2) + u*(get(i+1,2) - get(i,2))) - (get(j,2) + v*(get(j+1,2) - get(j,2)));
-
-                dist = std::sqrt((tempx)*(tempx) + (tempy)*(tempy) + (tempz)*(tempz));
-                dist = std::max(dist, 1e-6);
-                const double cutoff = std::pow(2.0, 1.0/6.0) * sigma;
-                if (dist < cutoff)
-                {
-                    double invd = 1.0 / dist;
-                    double s2 = (sigma * invd) * (sigma * invd);
-                    double s6 = s2 * s2 * s2;
-                    E += 4 * eps * (s6*s6 - s6) + eps;
-
-                    double forceMag = 24 * eps * invd * (2*s6*s6 - s6);
-
-                    double fx = forceMag * (tempx * invd);
-                    double fy = forceMag * (tempy * invd);
-                    double fz = forceMag * (tempz * invd);
-
-                    addg(i,   0,  -fx * (1-u));
-                    addg(i,   1,  -fy * (1-u));
-                    addg(i,   2,  -fz * (1-u));
-
-                    addg(i+1, 0,  -fx * u);
-                    addg(i+1, 1,  -fy * u);
-                    addg(i+1, 2,  -fz * u);
-
-                    addg(j,   0, fx * (1-v));
-                    addg(j,   1, fy * (1-v));
-                    addg(j,   2, fz * (1-v));
-
-                    addg(j+1, 0, fx * v);
-                    addg(j+1, 1, fy * v);
-                    addg(j+1, 2, fz * v);
-
-
-
-                }
-
-            }
-
         }
     }
     
