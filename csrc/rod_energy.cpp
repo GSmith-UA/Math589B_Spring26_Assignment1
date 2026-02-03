@@ -141,19 +141,15 @@ void rod_energy_grad(
 
     for (int i = 0; i < N; ++i) 
     {
-        // Check about half the remaining segments to avoid double counting (i,j) and (j,i)
-        // We start 3 segments away and check up to (N-3) away.
-        for (int k = 3; k <= N / 2; ++k) 
+        // Check segments j that are at least 3 steps ahead of i
+        // We only go up to N/2 to avoid checking (i,j) then (j,i)
+        for (int step = 3; step <= N - 3; ++step) 
         {
-            int j = idx(i + k);
+            int j = (i + step) % N;
 
-            // Explicit shared-node check (the ultimate safety net)
-            int i0 = i;
-            int i1 = idx(i + 1);
-            int j0 = j;
-            int j1 = idx(j + 1);
-
-            if (i0 == j0 || i0 == j1 || i1 == j0 || i1 == j1) continue;
+            // To avoid double counting pairs (i,j) and (j,i), 
+            // only process if i < j.
+            if (i >= j) continue;
 
             auto optimal = computeClosest(i, j);
             double u = optimal[0];
@@ -183,7 +179,7 @@ void rod_energy_grad(
 
             if (distSq < cutoffSq) {
                 double dist = std::sqrt(distSq);
-                dist = std::max(dist, 1e-9); 
+                dist = std::max(dist, 1e-12); 
 
                 double invd = 1.0 / dist;
                 double s2 = (sigma * invd) * (sigma * invd);
@@ -194,25 +190,25 @@ void rod_energy_grad(
                 // 1. Flip signs to match math gradient: dE/dx
                 // 2. Multiply by 2.0 to match autograder's expected summation scaling
                 double forceMag = 2.0 * 24.0 * eps * invd * (2.0 * s6 * s6 - s6); 
-                            
+
                 double fx = forceMag * (dx * invd);
                 double fy = forceMag * (dy * invd);
                 double fz = forceMag * (dz * invd);
-                            
+
                 // Gradient is dE/dx. If P_i is the first point:
                 // dE/dP_i = (dE/ddist) * (ddist/dPi)
                 addg(node_i0, 0, -fx * (1.0 - u)); // Flip back to -
                 addg(node_i0, 1, -fy * (1.0 - u));
                 addg(node_i0, 2, -fz * (1.0 - u));
-                            
+
                 addg(node_i1, 0, -fx * u);
                 addg(node_i1, 1, -fy * u);
                 addg(node_i1, 2, -fz * u);
-                            
+
                 addg(node_j0, 0,  fx * (1.0 - v)); // Flip back to +
                 addg(node_j0, 1,  fy * (1.0 - v));
                 addg(node_j0, 2,  fz * (1.0 - v));
-                            
+
                 addg(node_j1, 0,  fx * v);
                 addg(node_j1, 1,  fy * v);
                 addg(node_j1, 2,  fz * v);
