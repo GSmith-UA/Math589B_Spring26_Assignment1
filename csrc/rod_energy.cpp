@@ -151,49 +151,59 @@ void rod_energy_grad(
             double u = optimal[0];
             double v = optimal[1];
 
-            // Position on segment i: P = x_i + u*(x_{i+1} - x_i)
-            // Position on segment j: Q = x_j + v*(x_{j+1} - x_j)
-            double dx = (get(i,0) + u*(get(i+1,0) - get(i,0))) - (get(j,0) + v*(get(j+1,0) - get(j,0)));
-            double dy = (get(i,1) + u*(get(i+1,1) - get(i,1))) - (get(j,1) + v*(get(j+1,1) - get(j,1)));
-            double dz = (get(i,2) + u*(get(i+1,2) - get(i,2))) - (get(j,2) + v*(get(j+1,2) - get(j,2)));
+            // IMPORTANT: Use idx() for the +1 nodes to prevent out-of-bounds
+            int node_i0 = i;
+            int node_i1 = idx(i + 1);
+            int node_j0 = j;
+            int node_j1 = idx(j + 1);
+
+            // Position on segment i
+            double pix = get(node_i0, 0) + u * (get(node_i1, 0) - get(node_i0, 0));
+            double piy = get(node_i0, 1) + u * (get(node_i1, 1) - get(node_i0, 1));
+            double piz = get(node_i0, 2) + u * (get(node_i1, 2) - get(node_i0, 2));
+
+            // Position on segment j
+            double pjx = get(node_j0, 0) + v * (get(node_j1, 0) - get(node_j0, 0));
+            double pjy = get(node_j0, 1) + v * (get(node_j1, 1) - get(node_j0, 1));
+            double pjz = get(node_j0, 2) + v * (get(node_j1, 2) - get(node_j0, 2));
+
+            double dx = pix - pjx;
+            double dy = piy - pjy;
+            double dz = piz - pjz;
 
             double distSq = dx*dx + dy*dy + dz*dz;
 
             if (distSq < cutoffSq) {
                 double dist = std::sqrt(distSq);
-                dist = std::max(dist, 1e-8); // Safety floor
+                dist = std::max(dist, 1e-9); 
 
                 double invd = 1.0 / dist;
                 double s2 = (sigma * invd) * (sigma * invd);
                 double s6 = s2 * s2 * s2;
 
-                // Energy
                 E += 4.0 * eps * (s6 * s6 - s6) + eps;
 
-                // Force Magnitude (Repulsive)
                 double forceMag = 24.0 * eps * invd * (2.0 * s6 * s6 - s6);
                 double fx = forceMag * (dx * invd);
                 double fy = forceMag * (dy * invd);
                 double fz = forceMag * (dz * invd);
 
-                // --- GRadients (Flipped for Repulsion) ---
-                // Segment i is pushed AWAY from segment j (direction +f)
-                addg(i,   0,  fx * (1.0 - u));
-                addg(i,   1,  fy * (1.0 - u));
-                addg(i,   2,  fz * (1.0 - u));
+                // Use the node variables to ensure idx() is applied
+                addg(node_i0, 0,  fx * (1.0 - u));
+                addg(node_i0, 1,  fy * (1.0 - u));
+                addg(node_i0, 2,  fz * (1.0 - u));
 
-                addg(i+1, 0,  fx * u);
-                addg(i+1, 1,  fy * u);
-                addg(i+1, 2,  fz * u);
+                addg(node_i1, 0,  fx * u);
+                addg(node_i1, 1,  fy * u);
+                addg(node_i1, 2,  fz * u);
 
-                // Segment j is pushed AWAY from segment i (direction -f)
-                addg(j,   0, -fx * (1.0 - v));
-                addg(j,   1, -fy * (1.0 - v));
-                addg(j,   2, -fz * (1.0 - v));
+                addg(node_j0, 0, -fx * (1.0 - v));
+                addg(node_j0, 1, -fy * (1.0 - v));
+                addg(node_j0, 2, -fz * (1.0 - v));
 
-                addg(j+1, 0, -fx * v);
-                addg(j+1, 1, -fy * v);
-                addg(j+1, 2, -fz * v);
+                addg(node_j1, 0, -fx * v);
+                addg(node_j1, 1, -fy * v);
+                addg(node_j1, 2, -fz * v);
             }
         }
     }
