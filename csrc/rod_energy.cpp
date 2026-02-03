@@ -139,13 +139,21 @@ void rod_energy_grad(
     const double cutoff = std::pow(2.0, 1.0/6.0) * sigma;
     const double cutoffSq = cutoff * cutoff;
 
-    for (int i = 0; i < N; ++i) {
-        // j = i + 2 ensures we skip the current segment and the immediate neighbor
-        for (int j = i + 3; j < N; ++j) {
-
-            // Special case: if i is the first segment and j is the last, 
-            // they share node 0. Skip them.
-            if (i == 0 && j == N - 1) continue;
+    for (int i = 0; i < N; ++i) 
+    {
+        // Check about half the remaining segments to avoid double counting (i,j) and (j,i)
+        // We start 3 segments away and check up to (N-3) away.
+        for (int k = 3; k <= N / 2; ++k) 
+        {
+            int j = idx(i + k);
+        
+            // Explicit shared-node check (the ultimate safety net)
+            int i0 = i;
+            int i1 = idx(i + 1);
+            int j0 = j;
+            int j1 = idx(j + 1);
+        
+            if (i0 == j0 || i0 == j1 || i1 == j0 || i1 == j1) continue;
 
             auto optimal = computeClosest(i, j);
             double u = optimal[0];
