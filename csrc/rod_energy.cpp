@@ -182,7 +182,7 @@ void rod_energy_grad(
             double distSq = dx*dx + dy*dy + dz*dz;
 
             if (distSq < cutoffSq) {
-                double dist = std::sqrt(std::max(distSq,1e-4));
+                double dist = std::sqrt(distSq);
                 dist = std::max(dist, 1e-12); 
 
                 double invd = 1.0 / dist;
